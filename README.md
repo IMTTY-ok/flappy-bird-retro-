@@ -2,7 +2,23 @@
 
 A retro-styled **Flappy Bird** clone with a **global leaderboard** powered by **Firebase (Firestore + Cloud Functions)**. Built with pixel-art aesthetics, responsive UI, and smooth physics tuned for fair, fun gameplay.
 
+🔗 **Live Demo:** https://flappy-2855b.web.app
+
 ![Main Menu](docs/screenshots/main-menu.png)
+
+## 🧾 Changes So Far
+
+- Built the retro Flappy Bird frontend (HTML5 Canvas, pixel-art styling, smooth physics)
+- Added initial Node/Express leaderboard backend (`server.js`) + Vercel config
+- Migrated backend to **Firebase**:
+  - Cloud Functions (Express API backed by Firestore)
+  - Firestore security rules (public read, server-only writes)
+  - Firebase Hosting with API rewrites
+- Removed legacy Vercel server/JSON data store files
+- Added responsive UI improvements and game-over stats/rank display
+- Added project documentation and captured UI screenshots
+- Fixed deployment/runtime issues and Node version configuration
+- Deployed Firebase app to: **https://flappy-2855b.web.app**
 
 ## ✨ Features
 
