@@ -1,0 +1,11 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Leaderboard is read publicly; all writes go through the Cloud Function (Admin SDK),
+    // which bypasses these rules. Deny direct client writes.
+    match /scores/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Flappy Bird</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            image-rendering: pixelated;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #0a0a1a;
+            font-family: 'Press Start 2P', monospace;
+            overflow-x: hidden;
+            padding: 10px;
+        }
+
+        #appContainer {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        /* ---- GAME SIDE ---- */
+        #gameSection {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #header {
+            background: #111128;
+            border: 3px solid #e6c619;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            padding: 8px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 406px;
+        }
+
+        #header .title {
+            color: #e6c619;
+            font-size: 9px;
+            text-shadow: 2px 2px 0 #7a6a00;
+        }
+
+        #header .hiscore {
+            color: #4aeadc;
+            font-size: 7px;
+        }
+
+        #canvasWrapper {
+            border: 3px solid #e6c619;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+            position: relative;
+            width: 406px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* ---- OVERLAY ---- */
+        #overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 10, 26, 0.88);
+            z-index: 10;
+        }
+        #overlay.hidden { display: none; }
+
+        .overlay-title {
+            color: #e6c619;
+            font-size: 18px;
+            text-shadow: 3px 3px 0 #7a6a00;
+            margin-bottom: 6px;
+        }
+        .overlay-sub {
+            color: #4aeadc;
+            font-size: 7px;
+            margin-bottom: 20px;
+        }
+        .menu-box {
+            border: 3px solid #e6c619;
+            background: #111128;
+            padding: 18px 24px;
+            text-align: center;
+            min-width: 300px;
+        }
+        .menu-box .medal { font-size: 26px; margin-bottom: 10px; }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            padding: 4px 0;
+            border-bottom: 1px solid #222;
+        }
+        .stat-row:last-of-type { border-bottom: none; }
+        .stat-label { color: #666; font-size: 7px; }
+        .stat-value { color: #fff; font-size: 11px; }
+        .stat-value.gold { color: #e6c619; }
+        .stat-value.cyan { color: #4aeadc; }
+        .stat-value.big { font-size: 20px; }
+
+        .new-record {
+            color: #e85d3a;
+            font-size: 7px;
+            animation: blink 0.5s infinite;
+            margin-left: 6px;
+        }
+
+        /* Name input */
+        #nameInputSection {
+            margin-bottom: 14px;
+        }
+        #nameInputSection label {
+            color: #888;
+            font-size: 7px;
+            display: block;
+            margin-bottom: 6px;
+        }
+        #playerNameInput {
+            background: #0a0a1a;
+            border: 2px solid #e6c619;
+            color: #e6c619;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 8px 12px;
+            text-align: center;
+            width: 200px;
+            outline: none;
+            text-transform: uppercase;
+        }
+        #playerNameInput::placeholder {
+            color: #444;
+        }
+        #playerNameInput:focus {
+            border-color: #4aeadc;
+            color: #4aeadc;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            cursor: pointer;
+            border: none;
+            margin: 4px;
+            transition: all 0.1s;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn:active { transform: scale(0.95); }
+
+        .btn-primary {
+            background: #e6c619;
+            color: #0a0a1a;
+        }
+        .btn-primary:hover { background: #f0d840; }
+
+        .btn-secondary {
+            background: #333;
+            color: #4aeadc;
+        }
+        .btn-secondary:hover { background: #444; }
+
+        .hint {
+            color: #444;
+            font-size: 6px;
+            margin-top: 10px;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ---- STATS BAR (below game) ---- */
+        #statsBar {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 10px;
+        }
+        .footer-stat { text-align: center; }
+        .footer-stat .label { color: #444; font-size: 6px; margin-bottom: 3px; }
+        .footer-stat .value { color: #e6c619; font-size: 11px; }
+        .footer-stat .value.cyan { color: #4aeadc; }
+
+        /* ---- LEADERBOARD PANEL ---- */
+        #leaderboardPanel {
+            background: #111128;
+            border: 3px solid #e6c619;
+            border-radius: 8px;
+            width: 280px;
+            max-height: 610px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .lb-header {
+            background: #1a1a35;
+            padding: 10px;
+            text-align: center;
+            border-bottom: 2px solid #e6c619;
+        }
+        .lb-header h2 {
+            color: #e6c619;
+            font-size: 10px;
+            margin-bottom: 8px;
+        }
+
+        .lb-tabs {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+        }
+        .lb-tab {
+            padding: 5px 10px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 7px;
+            cursor: pointer;
+            border: 2px solid #333;
+            background: #0a0a1a;
+            color: #666;
+            transition: all 0.15s;
+        }
+        .lb-tab.active {
+            border-color: #4aeadc;
+            color: #4aeadc;
+            background: #1a2a35;
+        }
+        .lb-tab:hover { border-color: #e6c619; color: #e6c619; }
+
+        .lb-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 6px;
+        }
+
+        .lb-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .lb-list::-webkit-scrollbar-track {
+            background: #0a0a1a;
+        }
+        .lb-list::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        .lb-entry {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            margin-bottom: 2px;
+            background: #0d0d20;
+            border-left: 3px solid transparent;
+            transition: all 0.15s;
+        }
+        .lb-entry:hover { background: #1a1a35; }
+        .lb-entry.top1 { border-left-color: #e6c619; background: #1a1a10; }
+        .lb-entry.top2 { border-left-color: #aaa; }
+        .lb-entry.top3 { border-left-color: #cd7f32; }
+        .lb-entry.self { border-left-color: #4aeadc; background: #0d1a20; }
+
+        .lb-rank {
+            color: #555;
+            font-size: 8px;
+            width: 28px;
+            text-align: center;
+        }
+        .lb-entry.top1 .lb-rank { color: #e6c619; }
+        .lb-entry.top2 .lb-rank { color: #aaa; }
+        .lb-entry.top3 .lb-rank { color: #cd7f32; }
+
+        .lb-name {
+            flex: 1;
+            color: #ccc;
+            font-size: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .lb-entry.self .lb-name { color: #4aeadc; }
+
+        .lb-score {
+            color: #e6c619;
+            font-size: 9px;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .lb-empty {
+            color: #444;
+            font-size: 7px;
+            text-align: center;
+            padding: 30px 10px;
+        }
+
+        .lb-loading {
+            color: #4aeadc;
+            font-size: 7px;
+            text-align: center;
+            padding: 30px 10px;
+            animation: blink 1s infinite;
+        }
+
+        .lb-footer {
+            padding: 8px;
+            text-align: center;
+            border-top: 1px solid #222;
+        }
+        .lb-footer .refresh-btn {
+            background: none;
+            border: 1px solid #333;
+            color: #666;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .lb-footer .refresh-btn:hover { color: #4aeadc; border-color: #4aeadc; }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 750px) {
+            #appContainer {
+                flex-direction: column;
+                align-items: center;
+            }
+            #leaderboardPanel {
+                width: 100%;
+                max-width: 406px;
+                max-height: 350px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            #header { width: 100%; }
+            #canvasWrapper { width: 100%; }
+            canvas { width: 100%; height: auto; }
+            .menu-box { min-width: auto; width: 90%; }
+        }
+    </style>
+</head>
+<body>
+    <div id="appContainer">
+        <!-- GAME -->
+        <div id="gameSection">
+            <div id="header">
+                <div class="title">FLAPPY BIRD</div>
+                <div class="hiscore" id="headerHiScore">HI 000</div>
+            </div>
+
+            <div id="canvasWrapper">
+                <canvas id="gameCanvas" width="400" height="550"></canvas>
+
+                <div id="overlay">
+                    <div class="overlay-title" id="overlayTitle">FLAPPY BIRD</div>
+                    <div class="overlay-sub">— RETRO EDITION —</div>
+
+                    <div class="menu-box">
+                        <div class="medal" id="medal"></div>
+
+                        <!-- Name Input (shown on first visit) -->
+                        <div id="nameInputSection">
+                            <label>ENTER YOUR NAME</label>
+                            <input type="text" id="playerNameInput"
+                                   placeholder="YOUR NAME" maxlength="15"
+                                   autocomplete="off" spellcheck="false">
+                        </div>
+
+                        <!-- Score stats (shown after game over) -->
+                        <div id="scoreStats" style="display:none;">
+                            <div class="stat-row">
+                                <span class="stat-label">SCORE</span>
+                                <span class="stat-value big" id="finalScore">0</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">TODAY BEST</span>
+                                <span class="stat-value cyan" id="todayBest">0</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">ALL TIME BEST</span>
+                                <span class="stat-value gold" id="allTimeBest">0</span>
+                            </div>
+                            <div class="stat-row" id="rankRow" style="display:none;">
+                                <span class="stat-label">GLOBAL RANK</span>
+                                <span class="stat-value cyan" id="globalRank">#—</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 14px;">
+                            <button class="btn btn-primary" id="startBtn">START</button>
+                        </div>
+
+                        <div class="hint">SPACE / CLICK / TAP TO FLAP</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="statsBar">
+                <div class="footer-stat">
+                    <div class="label">SCORE</div>
+                    <div class="value" id="footerScore">0</div>
+                </div>
+                <div class="footer-stat">
+                    <div class="label">TODAY</div>
+                    <div class="value cyan" id="footerToday">0</div>
+                </div>
+                <div class="footer-stat">
+                    <div class="label">BEST</div>
+                    <div class="value" id="footerBest">0</div>
+                </div>
+                <div class="footer-stat">
+                    <div class="label">GAMES</div>
+                    <div class="value cyan" id="footerGames">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEADERBOARD -->
+        <div id="leaderboardPanel">
+            <div class="lb-header">
+                <h2>🏆 LEADERBOARD</h2>
+                <div class="lb-tabs">
+                    <div class="lb-tab active" data-tab="alltime">ALL TIME</div>
+                    <div class="lb-tab" data-tab="today">TODAY</div>
+                </div>
+            </div>
+            <div class="lb-list" id="lbList">
+                <div class="lb-loading">LOADING...</div>
+            </div>
+            <div class="lb-footer">
+                <button class="refresh-btn" id="refreshBtn">↻ REFRESH</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============== CONFIG ==============
+        const API_BASE = window.location.origin;
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
+
+        // ---- BALANCED / EASY SETTINGS ----
+        const GRAVITY = 0.22;
+        const FLAP_FORCE = -4.8;
+        const MAX_FALL_SPEED = 3.5;
+        const PIPE_WIDTH = 52;
+        const PIPE_GAP = 175;
+        const PIPE_SPEED = 1.3;
+        const PIPE_SPAWN_RATE = 160;
+        const BIRD_RADIUS = 12;
+        const GROUND_HEIGHT = 50;
+        const PIXEL = 4;
+
+        // ---- STATE ----
+        let bird, pipes, score, gameState, frameCount, groundOffset;
+        let particles, screenShake;
+        let playerName = localStorage.getItem('flappyPlayerName') || '';
+        let todayBest = 0;
+        let allTimeBest = 0;
+        let totalGames = parseInt(localStorage.getItem('flappyTotalGames')) || 0;
+        let currentTab = 'alltime';
+        let leaderboardData = [];
+
+        // ---- PALETTE ----
+        const PAL = {
+            bird1: '#e6c619', bird2: '#d4a017', bird3: '#7a6a00',
+            birdEye: '#fff', birdPupil: '#1a1a2e', birdBeak: '#e85d3a',
+            wing: '#f0d060',
+            pipe1: '#2ecc40', pipe2: '#1a9928', pipe3: '#0d6618', pipeCap: '#3bef55',
+            ground1: '#8b6914', ground2: '#6b4f10', ground3: '#a08020',
+            text: '#e6c619', cyan: '#4aeadc', red: '#e85d3a',
+            particle: ['#e6c619', '#4aeadc', '#e85d3a', '#fff', '#2ecc40']
+        };
+
+        // ============== API ==============
+        async function apiGet(url) {
+            try {
+                const res = await fetch(API_BASE + url);
+                return await res.json();
+            } catch (e) {
+                console.warn('API error:', e);
+                return null;
+            }
+        }
+
+        async function apiPost(url, body) {
+            try {
+                const res = await fetch(API_BASE + url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                return await res.json();
+            } catch (e) {
+                console.warn('API error:', e);
+                return null;
+            }
+        }
+
+        async function fetchPlayerStats() {
+            if (!playerName) return;
+            const data = await apiGet(`/api/leaderboard/player/${encodeURIComponent(playerName)}`);
+            if (data) {
+                todayBest = data.todayBest || 0;
+                allTimeBest = data.allTimeBest || 0;
+                totalGames = data.totalGames || 0;
+            }
+        }
+
+        async function submitScore(name, sc) {
+            const data = await apiPost('/api/leaderboard', { name, score: sc });
+            return data;
+        }
+
+        async function fetchLeaderboard(tab) {
+            const url = tab === 'today' ? '/api/leaderboard/today' : '/api/leaderboard';
+            const data = await apiGet(url);
+            if (data && data.scores) {
+                leaderboardData = data.scores;
+                renderLeaderboard();
+            }
+        }
+
+        function renderLeaderboard() {
+            const list = document.getElementById('lbList');
+            if (leaderboardData.length === 0) {
+                list.innerHTML = '<div class="lb-empty">NO SCORES YET<br><br>BE THE FIRST!</div>';
+                return;
+            }
+
+            let html = '';
+            leaderboardData.forEach((entry, i) => {
+                const rank = i + 1;
+                let cls = '';
+                if (rank === 1) cls = 'top1';
+                else if (rank === 2) cls = 'top2';
+                else if (rank === 3) cls = 'top3';
+                if (entry.name === playerName.toUpperCase()) cls += ' self';
+
+                const rankIcon = rank === 1 ? '👑' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
+
+                html += `
+                    <div class="lb-entry ${cls}">
+                        <div class="lb-rank">${rankIcon}</div>
+                        <div class="lb-name">${escapeHtml(entry.name)}</div>
+                        <div class="lb-score">${entry.score}</div>
+                    </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ============== GAME INIT ==============
+        function init() {
+            bird = {
+                x: 90, y: canvas.height / 2,
+                velocity: 0, rotation: 0,
+                flapFrame: 0, frame: 0
+            };
+            pipes = [];
+            particles = [];
+            score = 0;
+            frameCount = 0;
+            groundOffset = 0;
+            screenShake = 0;
+            gameState = 'waiting';
+            updateUI();
+        }
+
+        function getMedal(s) {
+            if (s >= 40) return '👑';
+            if (s >= 30) return '🏆';
+            if (s >= 20) return '🥇';
+            if (s >= 10) return '🥈';
+            if (s >= 5) return '🥉';
+            return '';
+        }
+
+        function updateUI() {
+            const headerHi = document.getElementById('headerHiScore');
+            headerHi.textContent = `HI ${String(allTimeBest).padStart(3, '0')}`;
+
+            document.getElementById('footerScore').textContent = score;
+            document.getElementById('footerToday').textContent = todayBest;
+            document.getElementById('footerBest').textContent = allTimeBest;
+            document.getElementById('footerGames').textContent = totalGames;
+
+            const nameSection = document.getElementById('nameInputSection');
+            const scoreStats = document.getElementById('scoreStats');
+            const startBtn = document.getElementById('startBtn');
+            const overlayTitle = document.getElementById('overlayTitle');
+            const medalEl = document.getElementById('medal');
+            const nameInput = document.getElementById('playerNameInput');
+
+            if (playerName) {
+                nameInput.value = playerName;
+            }
+
+            if (gameState === 'waiting') {
+                overlay.classList.remove('hidden');
+                overlayTitle.textContent = 'FLAPPY BIRD';
+                nameSection.style.display = 'block';
+                scoreStats.style.display = 'none';
+                medalEl.textContent = '';
+                startBtn.textContent = 'START';
+            } else if (gameState === 'dead') {
+                overlay.classList.remove('hidden');
+                overlayTitle.textContent = 'GAME OVER';
+                nameSection.style.display = 'none';
+                scoreStats.style.display = 'block';
+
+                document.getElementById('finalScore').textContent = score;
+                document.getElementById('todayBest').textContent = todayBest;
+                document.getElementById('allTimeBest').textContent = allTimeBest;
+
+                medalEl.textContent = getMedal(score);
+                startBtn.textContent = 'RETRY';
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // ============== PARTICLES ==============
+        function spawnParticles(x, y, count, color) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 3.5,
+                    vy: (Math.random() - 0.5) * 3.5,
+                    life: 25 + Math.random() * 20,
+                    maxLife: 45,
+                    size: PIXEL * (1 + Math.random()),
+                    color: color || PAL.particle[Math.floor(Math.random() * PAL.particle.length)]
+                });
+            }
+        }
+
+        // ============== GAME ACTIONS ==============
+        async function startGame() {
+            const nameInput = document.getElementById('playerNameInput');
+            const name = nameInput.value.trim();
+
+            if (!name || name.length === 0) {
+                nameInput.style.borderColor = '#e85d3a';
+                nameInput.placeholder = 'REQUIRED!';
+                nameInput.focus();
+                setTimeout(() => { nameInput.style.borderColor = '#e6c619'; nameInput.placeholder = 'YOUR NAME'; }, 1500);
+                return;
+            }
+
+            playerName = name.substring(0, 15);
+            localStorage.setItem('flappyPlayerName', playerName);
+
+            await fetchPlayerStats();
+
+            gameState = 'playing';
+            bird.velocity = FLAP_FORCE;
+            bird.flapFrame = 12;
+            updateUI();
+        }
+
+        function flap() {
+            if (gameState === 'playing') {
+                bird.velocity = FLAP_FORCE;
+                bird.flapFrame = 12;
+                spawnParticles(bird.x, bird.y + 8, 2, PAL.bird1);
+            }
+        }
+
+        async function die() {
+            gameState = 'dead';
+            screenShake = 10;
+            spawnParticles(bird.x, bird.y, 15);
+            totalGames++;
+            localStorage.setItem('flappyTotalGames', totalGames);
+
+            // Submit score
+            if (playerName) {
+                const result = await submitScore(playerName, score);
+                if (result && result.rank) {
+                    document.getElementById('rankRow').style.display = 'flex';
+                    document.getElementById('globalRank').textContent = `#${result.rank}`;
+                }
+
+                // Refresh stats
+                await fetchPlayerStats();
+                // Refresh leaderboard
+                await fetchLeaderboard(currentTab);
+            }
+
+            updateUI();
+        }
+
+        function retryGame() {
+            bird = {
+                x: 90, y: canvas.height / 2,
+                velocity: 0, rotation: 0,
+                flapFrame: 0, frame: 0
+            };
+            pipes = [];
+            particles = [];
+            score = 0;
+            frameCount = 0;
+            groundOffset = 0;
+            screenShake = 0;
+            document.getElementById('rankRow').style.display = 'none';
+
+            gameState = 'playing';
+            bird.velocity = FLAP_FORCE;
+            bird.flapFrame = 12;
+            updateUI();
+        }
+
+        function handleAction() {
+            if (gameState === 'waiting') {
+                startGame();
+            } else if (gameState === 'playing') {
+                flap();
+            } else if (gameState === 'dead') {
+                retryGame();
+            }
+        }
+
+        // ============== INPUT ==============
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                handleAction();
+            }
+            if (e.code === 'Enter' && gameState === 'waiting') {
+                e.preventDefault();
+                startGame();
+            }
+        });
+
+        document.getElementById('startBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (gameState === 'waiting') startGame();
+            else if (gameState === 'dead') retryGame();
+        });
+
+        canvas.addEventListener('click', handleAction);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleAction(); });
+
+        // Leaderboard tabs
+        document.querySelectorAll('.lb-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentTab = tab.dataset.tab;
+                fetchLeaderboard(currentTab);
+            });
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            fetchLeaderboard(currentTab);
+        });
+
+        // ============== GAME LOOP ==============
+        function spawnPipe() {
+            const minY = 70;
+            const maxY = canvas.height - GROUND_HEIGHT - PIPE_GAP - 70;
+            const topHeight = Math.random() * (maxY - minY) + minY;
+            pipes.push({
+                x: canvas.width + 20,
+                topHeight,
+                bottomY: topHeight + PIPE_GAP,
+                scored: false
+            });
+        }
+
+        function update() {
+            frameCount++;
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            if (screenShake > 0) screenShake--;
+
+            if (gameState !== 'playing') {
+                bird.y = canvas.height / 2 + Math.sin(frameCount * 0.035) * 12;
+                bird.frame = Math.floor(frameCount / 12) % 3;
+                groundOffset = (groundOffset + 0.4) % PIXEL;
+                return;
+            }
+
+            // ---- BIRD PHYSICS (SMOOTH FALLING) ----
+            bird.velocity += GRAVITY;
+
+            // Cap fall speed so bird doesn't plummet
+            if (bird.velocity > MAX_FALL_SPEED) {
+                bird.velocity = MAX_FALL_SPEED;
+            }
+
+            bird.y += bird.velocity;
+
+            // Smooth rotation: tilt up when flapping, gently tilt down when falling
+            const targetRotation = bird.velocity < 0
+                ? Math.max(bird.velocity * 5, -25)
+                : Math.min(bird.velocity * 8, 50);
+            bird.rotation += (targetRotation - bird.rotation) * 0.12;
+
+            bird.frame = Math.floor(frameCount / 8) % 3;
+            if (bird.flapFrame > 0) bird.flapFrame--;
+
+            groundOffset = (groundOffset + PIPE_SPEED) % PIXEL;
+
+            if (frameCount % PIPE_SPAWN_RATE === 0) {
+                spawnPipe();
+            }
+
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= PIPE_SPEED;
+                if (!pipes[i].scored && pipes[i].x + PIPE_WIDTH < bird.x) {
+                    pipes[i].scored = true;
+                    score++;
+                    spawnParticles(bird.x + 20, bird.y, 6);
+                    updateUI();
+                }
+                if (pipes[i].x + PIPE_WIDTH < -20) pipes.splice(i, 1);
+            }
+
+            // Collision (forgiving hitbox)
+            const hitbox = BIRD_RADIUS - 4;
+
+            if (bird.y + BIRD_RADIUS > canvas.height - GROUND_HEIGHT || bird.y - BIRD_RADIUS < 0) {
+                die();
+                return;
+            }
+
+            for (const pipe of pipes) {
+                if (bird.x + hitbox > pipe.x && bird.x - hitbox < pipe.x + PIPE_WIDTH) {
+                    if (bird.y - hitbox < pipe.topHeight || bird.y + hitbox > pipe.bottomY) {
+                        die();
+                        return;
+                    }
+                }
+            }
+        }
+
+        // ============== DRAWING ==============
+        function pixelRect(x, y, w, h) {
+            ctx.fillRect(
+                Math.round(x / PIXEL) * PIXEL,
+                Math.round(y / PIXEL) * PIXEL,
+                Math.round(w / PIXEL) * PIXEL,
+                Math.round(h / PIXEL) * PIXEL
+            );
+        }
+
+        function drawBackground() {
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height - GROUND_HEIGHT);
+            grad.addColorStop(0, '#0d1b2a');
+            grad.addColorStop(0.5, '#1b2838');
+            grad.addColorStop(1, '#2a4858');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Stars
+            ctx.fillStyle = '#e6c619';
+            const stars = [
+                [30,40],[120,25],[200,60],[300,30],[360,55],
+                [70,90],[250,80],[170,35],[340,95],[50,70],
+                [150,100],[380,40],[90,55],[270,45],[220,90],
+                [10,110],[185,15],[320,75],[140,65],[395,20]
+            ];
+            stars.forEach(([sx, sy]) => {
+                if (Math.sin(frameCount * 0.05 + sx) > 0.3) {
+                    ctx.globalAlpha = 0.3 + Math.sin(frameCount * 0.07 + sx * 0.1) * 0.35;
+                    pixelRect(sx, sy, PIXEL, PIXEL);
+                }
+            });
+            ctx.globalAlpha = 1;
+
+            // City silhouette
+            ctx.fillStyle = '#162030';
+            const buildings = [
+                [0,20],[30,35],[55,15],[80,40],[110,25],
+                [140,45],[160,20],[185,35],[210,50],[235,25],
+                [260,40],[285,15],[310,35],[335,45],[360,20],[385,30]
+            ];
+            const baseY = canvas.height - GROUND_HEIGHT - 10;
+            buildings.forEach(([bx, bh]) => {
+                pixelRect(bx, baseY - bh, 24, bh + 10);
+                ctx.fillStyle = '#e6c61920';
+                for (let wy = baseY - bh + 8; wy < baseY - 4; wy += 12) {
+                    for (let wx = bx + 4; wx < bx + 20; wx += 8) {
+                        if (Math.sin(wx * wy) > 0) pixelRect(wx, wy, PIXEL, PIXEL);
+                    }
+                }
+                ctx.fillStyle = '#162030';
+            });
+        }
+
+        function drawBird() {
+            ctx.save();
+            ctx.translate(bird.x, bird.y);
+            ctx.rotate((bird.rotation * Math.PI) / 180);
+
+            const s = PIXEL;
+
+            ctx.fillStyle = PAL.bird1;
+            pixelRect(-3*s, -2*s, 6*s, 4*s);
+            ctx.fillStyle = PAL.bird2;
+            pixelRect(-3*s, -2*s, 6*s, s);
+            ctx.fillStyle = PAL.bird3;
+            pixelRect(-4*s, -1*s, s, 2*s);
+            pixelRect(3*s, -1*s, s, 2*s);
+            pixelRect(-3*s, -3*s, 6*s, s);
+            pixelRect(-3*s, 2*s, 6*s, s);
+
+            ctx.fillStyle = PAL.birdEye;
+            pixelRect(1*s, -2*s, 2*s, 2*s);
+            ctx.fillStyle = PAL.birdPupil;
+            pixelRect(2*s, -1*s, s, s);
+
+            ctx.fillStyle = PAL.birdBeak;
+            pixelRect(3*s, -1*s, 2*s, s);
+            pixelRect(4*s, 0, s, s);
+
+            ctx.fillStyle = PAL.wing;
+            const wY = bird.flapFrame > 0 ? -3 : 0;
+            pixelRect(-2*s, wY*s, 3*s, 2*s);
+            ctx.fillStyle = PAL.bird2;
+            pixelRect(-2*s, (wY+1)*s, 3*s, s);
+
+            ctx.fillStyle = PAL.bird3;
+            pixelRect(-4*s, -1*s, s, s);
+            pixelRect(-5*s, 0, s, s);
+
+            ctx.restore();
+        }
+
+        function drawPipe(pipe) {
+            const capH = 12, capOver = 6;
+
+            ctx.fillStyle = PAL.pipe1;
+            pixelRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight);
+            ctx.fillStyle = PAL.pipe2;
+            pixelRect(pipe.x, 0, PIXEL*2, pipe.topHeight);
+            pixelRect(pipe.x + PIPE_WIDTH - PIXEL*2, 0, PIXEL*2, pipe.topHeight);
+            ctx.fillStyle = PAL.pipeCap;
+            pixelRect(pipe.x + PIXEL*2, 0, PIXEL*2, pipe.topHeight);
+
+            ctx.fillStyle = PAL.pipe1;
+            pixelRect(pipe.x - capOver, pipe.topHeight - capH, PIPE_WIDTH + capOver*2, capH);
+            ctx.fillStyle = PAL.pipe3;
+            pixelRect(pipe.x - capOver, pipe.topHeight - capH, PIPE_WIDTH + capOver*2, PIXEL);
+            pixelRect(pipe.x - capOver, pipe.topHeight - PIXEL, PIPE_WIDTH + capOver*2, PIXEL);
+            ctx.fillStyle = PAL.pipeCap;
+            pixelRect(pipe.x - capOver + PIXEL*2, pipe.topHeight - capH + PIXEL, PIXEL*2, capH - PIXEL*2);
+
+            const bY = pipe.bottomY;
+            const bH = canvas.height - GROUND_HEIGHT - bY;
+            ctx.fillStyle = PAL.pipe1;
+            pixelRect(pipe.x, bY, PIPE_WIDTH, bH);
+            ctx.fillStyle = PAL.pipe2;
+            pixelRect(pipe.x, bY, PIXEL*2, bH);
+            pixelRect(pipe.x + PIPE_WIDTH - PIXEL*2, bY, PIXEL*2, bH);
+            ctx.fillStyle = PAL.pipeCap;
+            pixelRect(pipe.x + PIXEL*2, bY, PIXEL*2, bH);
+
+            ctx.fillStyle = PAL.pipe1;
+            pixelRect(pipe.x - capOver, bY, PIPE_WIDTH + capOver*2, capH);
+            ctx.fillStyle = PAL.pipe3;
+            pixelRect(pipe.x - capOver, bY, PIPE_WIDTH + capOver*2, PIXEL);
+            pixelRect(pipe.x - capOver, bY + capH - PIXEL, PIPE_WIDTH + capOver*2, PIXEL);
+            ctx.fillStyle = PAL.pipeCap;
+            pixelRect(pipe.x - capOver + PIXEL*2, bY + PIXEL, PIXEL*2, capH - PIXEL*2);
+        }
+
+        function drawGround() {
+            ctx.fillStyle = PAL.ground1;
+            ctx.fillRect(0, canvas.height - GROUND_HEIGHT, canvas.width, GROUND_HEIGHT);
+            ctx.fillStyle = PAL.ground3;
+            ctx.fillRect(0, canvas.height - GROUND_HEIGHT, canvas.width, PIXEL*2);
+            ctx.fillStyle = PAL.ground2;
+            for (let x = -Math.floor(groundOffset); x < canvas.width + PIXEL; x += PIXEL*4) {
+                for (let y = canvas.height - GROUND_HEIGHT + PIXEL*3; y < canvas.height; y += PIXEL*3) {
+                    pixelRect(x, y, PIXEL, PIXEL);
+                }
+            }
+            ctx.fillStyle = '#3a2510';
+            ctx.fillRect(0, canvas.height - 12, canvas.width, 12);
+        }
+
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillStyle = p.color;
+                pixelRect(p.x, p.y, p.size, p.size);
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        function drawScore() {
+            if (gameState !== 'playing') return;
+            const text = String(score).padStart(3, '0');
+
+            ctx.font = '28px "Press Start 2P", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#000';
+            ctx.fillText(text, canvas.width/2 + 3, 48 + 3);
+            ctx.strokeStyle = '#7a6a00';
+            ctx.lineWidth = 3;
+            ctx.strokeText(text, canvas.width/2, 48);
+            ctx.fillStyle = PAL.text;
+            ctx.fillText(text, canvas.width/2, 48);
+
+            ctx.font = '8px "Press Start 2P", monospace';
+            ctx.fillStyle = PAL.cyan;
+            ctx.globalAlpha = 0.7;
+            ctx.fillText('SCORE', canvas.width/2, 62);
+            ctx.globalAlpha = 1;
+        }
+
+        function drawScanlines() {
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            for (let y = 0; y < canvas.height; y += 3) {
+                ctx.fillRect(0, y, canvas.width, 1);
+            }
+        }
+
+        function drawVignette() {
+            const grad = ctx.createRadialGradient(
+                canvas.width/2, canvas.height/2, canvas.height*0.3,
+                canvas.width/2, canvas.height/2, canvas.height*0.85
+            );
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.25)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function draw() {
+            ctx.save();
+            if (screenShake > 0) {
+                ctx.translate(
+                    (Math.random()-0.5)*screenShake,
+                    (Math.random()-0.5)*screenShake
+                );
+            }
+            ctx.clearRect(-10, -10, canvas.width+20, canvas.height+20);
+
+            drawBackground();
+            pipes.forEach(drawPipe);
+            drawGround();
+            drawParticles();
+            drawBird();
+            drawScore();
+            drawScanlines();
+            drawVignette();
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ============== STARTUP ==============
+        async function startup() {
+            init();
+
+            if (playerName) {
+                await fetchPlayerStats();
+                updateUI();
+            }
+
+            fetchLeaderboard('alltime');
+            gameLoop();
+        }
+
+        startup();
+    </script>
+</body>
+</html>
